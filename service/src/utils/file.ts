@@ -37,7 +37,7 @@ function applyHeaders(keys: string[], values: string[]) {
 export function lineDecoder<TypeDecoded>(line: string, options = DEFAULT_OPTIONS): string[] | TypeDecoded {
   const { separator, encoder, format, header } = options;
   // Remove end of lines
-  const decodedStr = Buffer.from(line, encoder).toString(encoder, 0, line.length - 1);
+  const decodedStr = Buffer.from(line, encoder).toString(encoder).replace('\r', '');
   if (format === 'json') {
     return JSON.parse(decodedStr);
   }
@@ -61,6 +61,7 @@ export function decodePipeline(encoder: BufferEncoding, separator: string, forma
   return new Transform({
     objectMode: true,
     transform(chunk, encoding, callback) {
+      // Decode binary chunk to string
       const data = chunk.toString(encoding);
       const lines = data.split('\n');
       for (const line of lines) {
