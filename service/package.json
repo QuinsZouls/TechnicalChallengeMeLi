@@ -1,7 +1,7 @@
 {
-  "name": "oauth2-concept-service",
+  "name": "challenge",
   "version": "0.0.1",
-  "description": "TypeScript + Sequelize + MySQL + Express API Server",
+  "description": "TypeScript + Workers + Express API Server",
   "author": "",
   "license": "ISC",
   "scripts": {
