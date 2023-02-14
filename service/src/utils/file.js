@@ -51,6 +51,7 @@ function decodePipeline(encoder, separator, format, useHeader) {
       // Decode binary chunk to string
       const data = chunk.toString(encoding);
       const lines = data.split('\n');
+      console.log(lines.length)
       for (const line of lines) {
         if (line.length) {
           if (useHeader) {

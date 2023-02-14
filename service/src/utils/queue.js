@@ -24,6 +24,9 @@ class ProcessQueue extends EventEmitter {
     if (this.activeProcesses < this.MAX_PROCESSES) {
       this.createChildProcess(this.tasks.shift());
     }
+    if (this.activeProcesses === this.MAX_PROCESSES) {
+      this.emit('queue_full');
+    }
   }
   /**
    * If there are less than the maximum number of processes running and there are tasks in the queue,
@@ -33,11 +36,14 @@ class ProcessQueue extends EventEmitter {
     while (this.activeProcesses < this.MAX_PROCESSES && this.tasks.length) {
       this.createChildProcess(this.tasks.shift());
     }
+    if (this.activeProcesses === 0) {
+      this.emit('done');
+    }
   }
   /* Creating a child process and sending a task to it. */
   createChildProcess(task) {
     this.activeProcesses++;
-    const worker = new Worker('./src/jobs/items.worker.js', {
+    const worker = new Worker('./src/workers/items.worker.js', {
       workerData: task,
     });
     worker.on('message', async msg => {

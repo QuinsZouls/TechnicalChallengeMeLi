@@ -5,9 +5,11 @@ const processData = async msg => {
   const API = new MLBridge();
   try {
     const item = await API.getItem(msg.site + msg.id, ['price', 'start_time', 'category_id', 'currency_id', 'seller_id']);
-    const category = await API.getCategory(item.category_id, ['name']);
-    const currency = await API.getCurrency(item.currency_id, ['description']);
-    const seller = await API.getUser(item.seller_id.toString(), ['nickname']);
+    const [category, currency, seller] = await Promise.all([
+      API.getCategory(item.category_id, ['name']),
+      API.getCurrency(item.currency_id, ['description']),
+      API.getUser(item.seller_id.toString(), ['nickname']),
+    ]);
     const record = {
       site: msg.site,
       id: msg.id,
@@ -23,7 +25,6 @@ const processData = async msg => {
     parentPort.postMessage(record);
     process.exit(0);
   } catch (error) {
-    // console.log(error);
     process.exit(-1);
   }
 };
