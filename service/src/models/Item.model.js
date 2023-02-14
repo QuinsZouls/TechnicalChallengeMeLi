@@ -1,7 +1,6 @@
-import { Item } from '@/interfaces/database';
-import { Schema, model } from 'mongoose';
+const mongoose = require('mongoose');
 
-const schema = new Schema<Item>({
+const schema = new mongoose.Schema({
   site: {
     type: String,
     required: true,
@@ -30,6 +29,6 @@ const schema = new Schema<Item>({
   },
 });
 
-const ItemModel = model<Item>('Item', schema);
+const ItemModel = mongoose.model('Item', schema);
 
-export default ItemModel;
+module.exports = ItemModel;

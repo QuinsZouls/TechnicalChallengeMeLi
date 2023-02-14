@@ -1,12 +1,12 @@
-import { NextFunction, Request, Response } from 'express';
-import os from 'node:os';
-import { decodePipeline } from '@/utils/file';
-import ProcessQueue from '@/utils/queue';
+const os = require('os');
+const { decodePipeline } = require('../utils/file');
+const ProcessQueue = require('../utils/queue');
+const { MAX_THREADS } = require('../config');
 
-export default class ImportController {
-  private processQueue = new ProcessQueue(os.cpus().length);
+class ImportController {
+  processQueue = new ProcessQueue(os.cpus().length);
   // TODO add config middleware
-  public uploadFile = async (req: Request, res: Response, next: NextFunction) => {
+  uploadFile = async (req, res, next) => {
     try {
       // Apply custom transform to read and parse streaming data
       req
@@ -24,3 +24,4 @@ export default class ImportController {
     }
   };
 }
+module.exports = ImportController;

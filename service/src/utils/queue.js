@@ -1,21 +1,25 @@
-import { Item } from '@/interfaces/database';
-import ItemsService from '@/services/items.service';
-import { fork } from 'child_process';
+const ItemService = require('../services/items.service');
+const { Worker } = require('worker_threads');
+const EventEmitter = require('events');
 
-export default class ProcessQueue {
-  public MAX_PROCESSES = 10;
-  private activeProcesses = 0;
-  private tasks: any[] = [];
-  private itemService = new ItemsService();
+class ProcessQueue extends EventEmitter {
+  MAX_PROCESSES = 10;
+  activeProcesses = 0;
+  tasks = [];
+  itemService = new ItemService();
   constructor(max_process = 10) {
+    super();
     this.MAX_PROCESSES = max_process;
+    this.on('task_completed', () => {
+      this.processTasks();
+    });
   }
   /**
    * If there are less than the maximum number of processes running, create a new child process and run
    * the first task in the queue.
    * @param {any} task - any - this is the task that you want to run.
    */
-  public createTask(task: any) {
+  createTask(task) {
     this.tasks.push(task);
     if (this.activeProcesses < this.MAX_PROCESSES) {
       this.createChildProcess(this.tasks.shift());
@@ -25,27 +29,25 @@ export default class ProcessQueue {
    * If there are less than the maximum number of processes running and there are tasks in the queue,
    * then create a child process and remove the first task from the queue
    */
-  private processTasks() {
-    if (this.activeProcesses < this.MAX_PROCESSES && this.tasks.length) {
+  processTasks() {
+    while (this.activeProcesses < this.MAX_PROCESSES && this.tasks.length) {
       this.createChildProcess(this.tasks.shift());
     }
   }
   /* Creating a child process and sending a task to it. */
-  private createChildProcess(task: any) {
+  createChildProcess(task) {
     this.activeProcesses++;
-    const thread = fork('./src/jobs/items.job');
-    thread.send(task);
-    thread.on('message', async (msg: Item) => {
-      this.processTasks();
+    const worker = new Worker('./src/jobs/items.worker.js', {
+      workerData: task,
+    });
+    worker.on('message', async msg => {
       await this.itemService.createItem(msg);
     });
-    thread.on('exit', () => {
-      this.processTasks();
+    worker.on('exit', e => {
       this.activeProcesses--;
-    });
-    thread.on('error', error => {
-      console.log(error);
-      this.activeProcesses--;
+      this.emit('task_completed');
     });
   }
 }
+
+module.exports = ProcessQueue;

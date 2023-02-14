@@ -1,17 +1,4 @@
-import { Transform } from 'stream';
-
-export interface Options {
-  encoder: BufferEncoding;
-  separator: string;
-  format: 'json' | 'txt';
-  header?: string[];
-}
-const DEFAULT_OPTIONS: Options = {
-  encoder: 'utf-8',
-  separator: ',',
-  format: 'txt',
-  header: [],
-};
+const { Transform } = require('stream');
 
 /**
  * It takes two arrays of strings, and returns an object with the first array as keys and the second
@@ -20,8 +7,8 @@ const DEFAULT_OPTIONS: Options = {
  * @param {string[]} values
  * @returns An object with the keys and values from the two arrays.
  */
-function applyHeaders(keys: string[], values: string[]) {
-  const mappedKeys: Record<any, any> = {};
+function applyHeaders(keys = [], values = []) {
+  const mappedKeys = {};
   for (const i in keys) {
     mappedKeys[keys[i]] = values[i];
   }
@@ -34,7 +21,7 @@ function applyHeaders(keys: string[], values: string[]) {
  * @param options - {
  * @returns An array of strings or an object.
  */
-export function lineDecoder<TypeDecoded>(line: string, options = DEFAULT_OPTIONS): string[] | TypeDecoded {
+function lineDecoder(line, options = DEFAULT_OPTIONS) {
   const { separator, encoder, format, header } = options;
   // Remove end of lines
   const decodedStr = Buffer.from(line, encoder).toString(encoder).replace('\r', '');
@@ -56,8 +43,8 @@ export function lineDecoder<TypeDecoded>(line: string, options = DEFAULT_OPTIONS
  * header
  * @returns A Transform stream
  */
-export function decodePipeline(encoder: BufferEncoding, separator: string, format: 'json' | 'txt', useHeader: boolean) {
-  let header: string[] | null = null;
+function decodePipeline(encoder, separator, format, useHeader) {
+  let header = null;
   return new Transform({
     objectMode: true,
     transform(chunk, encoding, callback) {
@@ -100,3 +87,7 @@ export function decodePipeline(encoder: BufferEncoding, separator: string, forma
     },
   });
 }
+module.exports = {
+  decodePipeline,
+  lineDecoder,
+};
