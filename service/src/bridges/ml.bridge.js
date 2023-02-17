@@ -2,9 +2,12 @@ const axios = require('axios').default;
 const { ML_API_SERVICE_URL } = require('../config');
 
 class MLBridge {
-  API = axios.create({
-    baseURL: ML_API_SERVICE_URL,
-  });
+  API = null;
+  constructor(url = ML_API_SERVICE_URL) {
+    this.API = axios.create({
+      baseURL: url,
+    });
+  }
   async getItem(itemID, attributes = []) {
     const response = await this.API.get(`items/${itemID}?attributes=${attributes.toString()}`);
     return response.data;

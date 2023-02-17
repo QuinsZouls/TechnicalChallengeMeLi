@@ -7,6 +7,7 @@ class ProcessQueue extends EventEmitter {
   activeProcesses = 0;
   tasks = [];
   itemService = new ItemService();
+  errors = 0;
   constructor(max_process = 10) {
     super();
     this.MAX_PROCESSES = max_process;
@@ -51,6 +52,9 @@ class ProcessQueue extends EventEmitter {
     });
     worker.on('exit', e => {
       this.activeProcesses--;
+      if (e === -1) {
+        this.errors++;
+      }
       this.emit('task_completed');
     });
   }

@@ -1,4 +1,7 @@
-const { Transform } = require('stream');
+const os = require('os');
+const fs = require('fs');
+const readline = require('readline');
+const ProcessQueue = require('./queue');
 
 /**
  * It takes two arrays of strings, and returns an object with the first array as keys and the second
@@ -14,7 +17,12 @@ function applyHeaders(keys = [], values = []) {
   }
   return mappedKeys;
 }
-
+const DEFAULT_OPTIONS = {
+  encoder: 'utf-8',
+  separator: ',',
+  format: 'txt',
+  header: [],
+};
 /**
  * It takes a string, decodes it, splits it into an array, and returns the array
  * @param {string} line - string - the line to decode
@@ -24,9 +32,12 @@ function applyHeaders(keys = [], values = []) {
 function lineDecoder(line, options = DEFAULT_OPTIONS) {
   const { separator, encoder, format, header } = options;
   // Remove end of lines
-  const decodedStr = Buffer.from(line, encoder).toString(encoder).replace('\r', '');
+  if (!line) {
+    return [];
+  }
+  const decodedStr = Buffer.from(line, encoder).toString(encoder);
   if (format === 'json') {
-    return JSON.parse(decodedStr);
+    return JSON.parse(line);
   }
   if (header?.length) {
     return applyHeaders(header, decodedStr.split(separator));
@@ -35,60 +46,52 @@ function lineDecoder(line, options = DEFAULT_OPTIONS) {
 }
 
 /**
- * It takes a string, splits it into lines, and then splits each line into an array of strings.
- * @param {BufferEncoding} encoder - BufferEncoding - The encoding of the file.
- * @param {string} separator - the separator used in the csv file
- * @param {'json' | 'txt'} format - 'json' | 'txt'
- * @param {boolean} useHeader - boolean - if true, the first line of the file will be used as the
- * header
- * @returns A Transform stream
+ * It reads a file line by line, and for each line it creates a task in a queue
+ * @param path - The path to the file to be processed.
+ * @param options
  */
-function decodePipeline(encoder, separator, format, useHeader) {
+function processFile(path = '', options = {}) {
   let header = null;
-  return new Transform({
-    objectMode: true,
-    transform(chunk, encoding, callback) {
-      // Decode binary chunk to string
-      const data = chunk.toString(encoding);
-      const lines = data.split('\n');
-      console.log(lines.length)
-      for (const line of lines) {
-        if (line.length) {
-          if (useHeader) {
-            if (header === null) {
-              header = lineDecoder(line, {
-                encoder,
-                separator,
-                format,
-              });
-            } else {
-              this.push(
-                // decode line with header
-                lineDecoder(line, {
-                  encoder,
-                  separator,
-                  header,
-                  format,
-                }),
-              );
-            }
-          } else {
-            // Send decoded line
-            this.push(
-              lineDecoder(line, {
-                encoder,
-                separator,
-                format,
-              }),
-            );
-          }
-        }
+  const { encoder = 'utf-8', format, separator } = options;
+  const queue = new ProcessQueue(parseInt(os.cpus().length * 1.5));
+  const readInterface = readline.createInterface({
+    input: fs.createReadStream(path, { flags: 'r', encoding: encoder }),
+  });
+  queue.on('queue_full', () => {
+    readInterface.pause();
+  });
+  queue.on('task_completed', () => {
+    readInterface.resume();
+  });
+  queue.on('done', () => {
+    readInterface.close();
+    console.log('queue complete with errors: ' + queue.errors);
+  });
+  readInterface.on('line', data => {
+    let row;
+    try {
+      if (header === null && format !== 'json') {
+        header = lineDecoder(data, {
+          encoder,
+          separator,
+          format,
+        });
+      } else {
+        row = lineDecoder(data, {
+          encoder,
+          separator,
+          format,
+          header,
+        });
+        queue.createTask(row);
       }
-      callback();
-    },
+    } catch (e) {
+      console.log(`Error al procesar la línea: ${data}`, e);
+    }
   });
 }
 module.exports = {
-  decodePipeline,
   lineDecoder,
+  processFile,
+  applyHeaders,
 };
