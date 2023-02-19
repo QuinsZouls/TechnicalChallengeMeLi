@@ -8,7 +8,7 @@
     "start": "node ./src/server.js",
     "dev": "nodemon ./src/server.js",
     "test": "jest --forceExit --detectOpenHandles",
-    "lint": "eslint --ignore-path .gitignore --ext .ts src/",
+    "lint": "eslint --ignore-path .gitignore --ext .js src/",
     "lint:fix": "npm run lint -- --fix"
   },
   "dependencies": {
