@@ -45,19 +45,31 @@ ML_API_SERVICE_URL = https://api.mercadolibre.com
 ```
 ## Ejecución
 Para la ejecución debe tener configuradas las variables de ambiente
-### Desarrollo
+### Levantar el servicio
 Para ejecutar el microservicio en modo desarrollo basta con correr el siguiente comando:
 ```bash
 npm run dev
 # En caso de yarn
 yarn dev
 ```
-### Desarrollo
-Para ejecutar el microservicio en producción basta con correr el siguiente comando:
-```bash
-npm run start
-# En caso de yarn
-yarn start
+### Disparar el ejercicio
+El sistema expone un endpoint de tipo POST en **/import** para leer el archivo.
+En el body del request debe contener la siguiente información:
+| Propiedad | Descripción | Requerido | Valor por defecto | Tipo |
+|-----------|-------------|-----------|-------------------|------|
+| `path` | Ruta absoluta del archivo a leer | `Si` | N/A | string |
+| `format` | Formato de la linea | `No` | 'plain' | 'plain', 'json' |
+| `separator` | Separador de los campos en caso de que no sea en formato json | `No` | ',' | string |
+| `encoder` | Codificación del archivo | `No` | 'utf-8' | string |
+
+Ejemplo:
+```json
+{
+  "path": "/home/test.csv",
+  "format": "plain",
+  "separator": ",",
+  "encoder": "utf-8"
+}
 ```
 ## Pruebas unitarias y calidad de código
 ### Ejecución de pruebas unitarias
